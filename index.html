@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Big Business Simulator</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="desktop">
+      <!-- main app window -->
+      <div class="window app-window">
+        <div class="title-bar">
+          <div class="title-bar-text">
+            <img
+              class="title-icon"
+              alt=""
+              src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><rect width='16' height='16' fill='%23008000'/><text x='3' y='12' font-size='11' font-family='Arial' fill='white' font-weight='bold'>E</text></svg>"
+            />
+            BIG BUSINESS&trade; Profit Maximizer 2001 -
+            [C:\\OFFSHORE\\BOOKS.XLS]
+          </div>
+          <div class="title-bar-controls">
+            <button class="tb-btn" aria-label="Minimize">_</button>
+            <button class="tb-btn" aria-label="Maximize">▢</button>
+            <button class="tb-btn close" aria-label="Close">✕</button>
+          </div>
+        </div>
+
+        <div class="menu-bar">
+          <span id="helpMenu"><span class="u">H</span>elp</span>
+        </div>
+
+        <div class="window-body">
+          <div class="top-row">
+            <fieldset class="ticker-box">
+              <legend>NASDAQ: <span id="tickerSym">BIGB</span></legend>
+              <div class="ticker">
+                $<span id="stockPrice">90.00</span>
+                <span id="stockArrow">▲</span>
+              </div>
+            </fieldset>
+
+            <fieldset class="stats">
+              <legend>Books (unaudited)</legend>
+              <div class="stat">
+                <span id="currency">0</span><small>Reported Earnings</small>
+              </div>
+              <div class="stat">
+                <span id="cps">0</span><small>earnings / sec</small>
+              </div>
+            </fieldset>
+          </div>
+
+          <fieldset class="suspicion">
+            <legend>SEC Suspicion Monitor</legend>
+            <div class="suspicion-label">
+              <span>Heat Level</span><span id="suspicionPct">0%</span>
+            </div>
+            <div class="meter">
+              <div id="suspicionBar" class="meter-fill"></div>
+            </div>
+            <button id="shredBtn" class="win-btn shred">
+              🗑 Shred Documents
+            </button>
+          </fieldset>
+
+          <div class="main-row">
+            <fieldset class="clicker">
+              <legend>Mark-to-Market</legend>
+              <button id="clickBtn" class="big-button">
+                <span class="big-icon">$</span>
+                Mark-to-Market
+                <span class="per-click">+<span id="perClick">1</span></span>
+              </button>
+            </fieldset>
+
+            <fieldset class="shop">
+              <legend>Creative Accounting (click to buy)</legend>
+              <div id="shop"></div>
+            </fieldset>
+          </div>
+
+          <fieldset class="upgrades-panel">
+            <legend>Damage Control (one-time upgrades)</legend>
+            <div id="upgrades"></div>
+          </fieldset>
+        </div>
+
+        <div class="status-bar">
+          <span class="status-cell" id="status">Ready.</span>
+          <span class="status-cell grow"></span>
+          <span class="status-cell">CAPS</span>
+          <span class="status-cell">NUM</span>
+        </div>
+      </div>
+
+      <!-- footer controls window -->
+      <div class="window mini-window">
+        <div class="title-bar">
+          <div class="title-bar-text">Control Panel</div>
+        </div>
+        <div class="window-body controls">
+          <button id="saveBtn" class="win-btn">💾 Save</button>
+          <button id="scoresBtn" class="win-btn">📈 High Scores</button>
+          <button id="resetBtn" class="win-btn danger">
+            ☠ Declare Bankruptcy
+          </button>
+        </div>
+      </div>
+
+      <!-- taskbar -->
+      <div class="taskbar">
+        <button class="start-btn"><span class="start-logo"></span>Start</button>
+        <div class="task-item active" id="taskTitle">
+          BIG BUSINESS™ Profit Maximizer
+        </div>
+        <div class="tray"><span id="clock">9:01 AM</span></div>
+      </div>
+    </div>
+
+    <!-- investigation modal (Win98 dialog) -->
+    <div id="modal" class="modal hidden">
+      <div class="window dialog">
+        <div class="title-bar">
+          <div class="title-bar-text" id="modalTitle">SEC INVESTIGATION</div>
+          <div class="title-bar-controls">
+            <button class="tb-btn close" id="modalCloseX">✕</button>
+          </div>
+        </div>
+        <div class="window-body">
+          <div class="dialog-content">
+            <div class="dialog-icon">⚠</div>
+            <p id="modalBody"></p>
+          </div>
+          <div class="dialog-buttons">
+            <button id="modalClose" class="win-btn">Lawyer Up</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- company setup wizard -->
+    <div id="setupModal" class="modal hidden">
+      <div class="window dialog setup-dialog">
+        <div class="title-bar">
+          <div class="title-bar-text">New Incorporation Wizard</div>
+        </div>
+        <div class="window-body">
+          <div class="setup-content">
+            <div class="setup-banner">📈</div>
+            <div class="setup-fields">
+              <p>Welcome, future felon. Incorporate your shell empire.</p>
+              <label
+                >Company Name
+                <input
+                  type="text"
+                  id="companyNameInput"
+                  maxlength="28"
+                  placeholder="e.g. Big Business Inc"
+                />
+              </label>
+              <label
+                >Ticker Symbol (1-4 letters)
+                <input
+                  type="text"
+                  id="companyTickerInput"
+                  maxlength="4"
+                  placeholder="ENRN"
+                />
+              </label>
+              <p class="setup-err" id="setupErr"></p>
+            </div>
+          </div>
+          <div class="dialog-buttons">
+            <button id="setupHelp" class="win-btn">Help</button>
+            <button id="setupGo" class="win-btn">Incorporate →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NASDAQ high scores -->
+    <div id="scoresModal" class="modal hidden">
+      <div class="window dialog nasdaq-dialog">
+        <div class="title-bar">
+          <div class="title-bar-text">High Scores</div>
+          <div class="title-bar-controls">
+            <button class="tb-btn close" id="scoresCloseX">✕</button>
+          </div>
+        </div>
+        <div class="window-body">
+          <div class="nasdaq">
+            <div class="nasdaq-header">
+              <span class="nasdaq-logo">NASDAQ</span>
+              <span class="nasdaq-sub"
+                >TOP REPORTED EARNINGS &middot; ALL-TIME</span
+              >
+              <span class="nasdaq-live">● LIVE</span>
+            </div>
+            <div class="nasdaq-marquee"><span id="nasdaqTape"></span></div>
+            <div class="nasdaq-grid" id="scoresBody"></div>
+          </div>
+          <div class="dialog-buttons">
+            <button id="scoresClose" class="win-btn">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- help dialog -->
+    <div id="helpModal" class="modal hidden">
+      <div class="window dialog help-dialog">
+        <div class="title-bar">
+          <div class="title-bar-text">Help</div>
+          <div class="title-bar-controls">
+            <button class="tb-btn close" id="helpCloseX">✕</button>
+          </div>
+        </div>
+        <div class="window-body">
+          <div class="help-content">
+            <p>
+              <b>Goal:</b> Maximize Reported Earnings and keep the SEC off your
+              back.
+            </p>
+            <ol>
+              <li>
+                <b>Cook the Books</b> — click the green orb to mark imaginary
+                profits to market. Each click also raises <b>heat</b>.
+              </li>
+              <li>
+                <b>Buy schemes</b> in <i>Creative Accounting</i>. They earn
+                passively, but most raise heat too.
+              </li>
+              <li>
+                <b>Launder the heat</b> — Arthur Andersen, Offshore Shells &amp;
+                Lobbyists <i>lower</i> suspicion while you keep earning.
+              </li>
+              <li>
+                <b>Shred Documents</b> — panic shred all the docs! Drops heat
+                quick (short cooldown).
+              </li>
+              <li>
+                <b>Damage Control</b> — one-time upgrades that permanently cut
+                heat, buff shredding, soften SEC raids, or boost earnings.
+              </li>
+            </ol>
+            <p class="warn-line">
+              ⚠ <b>Heat hits 100%</b> → SEC raid. They seize some earnings and
+              reset heat to 50%. Earnings seized are worse every time.
+            </p>
+            <p class="warn-line">
+              <b>GAME OVER</b> happens two ways: <br />•
+              <b>4 SEC investigations</b> → federal raid, you're done. <br />•
+              <b>Stock gets DELISTED</b> — share price falls to $0.26. Heat
+              drags it down and each raid permanently dents it, so cook fast but
+              keep the stock alive.
+            </p>
+            <p>
+              <b>BIGB stock</b> Bullish with peak earnings, bearish with heat
+              and raids. Hit $0.26 and you're delisted (see above).
+            </p>
+            <p><b>Declare Bankruptcy</b> Wipes everything. Keep your bonus.</p>
+          </div>
+          <div class="dialog-buttons">
+            <button id="helpClose" class="win-btn">Nice!</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CRT overlay -->
+    <div class="crt" aria-hidden="true">
+      <div class="crt-scanlines"></div>
+      <div class="crt-mask"></div>
+      <div class="crt-roll"></div>
+      <div class="crt-vignette"></div>
+      <div class="crt-flicker"></div>
+    </div>
+
+    <script src="game.js"></script>
+  </body>
+</html>
