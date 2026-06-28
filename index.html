@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>Big Business Simulator</title>
     <link rel="stylesheet" href="style.css" />
   </head>
@@ -12,11 +15,6 @@
       <div class="window app-window">
         <div class="title-bar">
           <div class="title-bar-text">
-            <img
-              class="title-icon"
-              alt=""
-              src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><rect width='16' height='16' fill='%23008000'/><text x='3' y='12' font-size='11' font-family='Arial' fill='white' font-weight='bold'>E</text></svg>"
-            />
             BIG BUSINESS&trade; Profit Maximizer 2001 -
             [C:\\OFFSHORE\\BOOKS.XLS]
           </div>
@@ -42,7 +40,7 @@
             </fieldset>
 
             <fieldset class="stats">
-              <legend>Books (unaudited)</legend>
+              <legend>The Books</legend>
               <div class="stat">
                 <span id="currency">0</span><small>Reported Earnings</small>
               </div>
@@ -101,17 +99,16 @@
           <div class="title-bar-text">Control Panel</div>
         </div>
         <div class="window-body controls">
-          <button id="saveBtn" class="win-btn">💾 Save</button>
-          <button id="scoresBtn" class="win-btn">📈 High Scores</button>
+          <button id="saveBtn" class="win-btn">Save</button>
+          <button id="scoresBtn" class="win-btn">High Scores</button>
           <button id="resetBtn" class="win-btn danger">
-            ☠ Declare Bankruptcy
+            Declare Bankruptcy
           </button>
         </div>
       </div>
 
       <!-- taskbar -->
       <div class="taskbar">
-        <button class="start-btn"><span class="start-logo"></span>Start</button>
         <div class="task-item active" id="taskTitle">
           BIG BUSINESS™ Profit Maximizer
         </div>
@@ -148,9 +145,8 @@
         </div>
         <div class="window-body">
           <div class="setup-content">
-            <div class="setup-banner">📈</div>
             <div class="setup-fields">
-              <p>Welcome, future felon. Incorporate your shell empire.</p>
+              <p>Welcome! This wizard will help you set up your company.</p>
               <label
                 >Company Name
                 <input

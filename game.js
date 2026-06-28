@@ -275,7 +275,7 @@ function shred() {
   state.suspicion -= TUNING.shredCut * upgMult("shredMult");
   clampHeat();
   render();
-  flashStatus("Documents shredded. What documents?");
+  flashStatus("Documents shredded.");
 }
 
 // ---- Loop ----
