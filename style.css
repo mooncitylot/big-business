@@ -172,8 +172,16 @@ legend {
 .stats {
   flex: 2 1 320px;
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  gap: 12px 24px;
   align-items: center;
+  min-width: 0;
+}
+.stat {
+  min-width: 0;
+}
+.stat span {
+  overflow-wrap: anywhere;
 }
 
 .ticker {
@@ -706,6 +714,69 @@ legend {
   animation: tape 18s linear infinite;
 }
 @keyframes tape {
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+/* live news ticker (broadcast lower-third) */
+.news-ticker {
+  display: flex;
+  align-items: stretch;
+  height: 22px;
+  background: #000;
+  border-bottom: 1px solid #333;
+  overflow: hidden;
+  font-family: "Courier New", monospace;
+}
+.news-label {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-weight: 900;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #fff;
+  background: #c00;
+  text-transform: uppercase;
+}
+.news-ticker.breaking .news-label {
+  animation: pulse 0.6s infinite alternate;
+}
+.news-ticker.good .news-label {
+  background: #0a8a2a;
+}
+.news-scroll {
+  position: relative;
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.news-scroll span {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: inline-block;
+  padding: 3px 0;
+  font-size: 12px;
+  color: #ffb000;
+  will-change: transform;
+}
+.news-scroll span.run {
+  animation: newsScroll linear forwards;
+}
+.news-scroll span.breaking {
+  color: #ff4d4d;
+  font-weight: 700;
+}
+.news-scroll span.good {
+  color: #00ff66;
+}
+@keyframes newsScroll {
+  from {
+    transform: translateX(100%);
+  }
   to {
     transform: translateX(-100%);
   }

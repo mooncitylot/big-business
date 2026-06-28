@@ -16,7 +16,7 @@
         <div class="title-bar">
           <div class="title-bar-text">
             BIG BUSINESS&trade; Profit Maximizer 2001 -
-            [C:\\OFFSHORE\\BOOKS.XLS]
+            [C:\\BIG_BIZ\\BOOKS.CSV]
           </div>
           <div class="title-bar-controls">
             <button class="tb-btn" aria-label="Minimize">_</button>
@@ -27,6 +27,13 @@
 
         <div class="menu-bar">
           <span id="helpMenu"><span class="u">H</span>elp</span>
+        </div>
+
+        <div class="news-ticker" id="newsTicker">
+          <span class="news-label" id="newsLabel">NEWSMASTER</span>
+          <div class="news-scroll">
+            <span id="newsTape"></span>
+          </div>
         </div>
 
         <div class="window-body">
@@ -46,6 +53,9 @@
               </div>
               <div class="stat">
                 <span id="cps">0</span><small>earnings / sec</small>
+              </div>
+              <div class="stat">
+                <span id="heatRate">0</span><small>heat / sec</small>
               </div>
             </fieldset>
           </div>
@@ -99,7 +109,6 @@
           <div class="title-bar-text">Control Panel</div>
         </div>
         <div class="window-body controls">
-          <button id="pauseBtn" class="win-btn">⏸ Pause</button>
           <button id="saveBtn" class="win-btn">Save</button>
           <button id="scoresBtn" class="win-btn">High Scores</button>
           <button id="resetBtn" class="win-btn danger">
@@ -108,16 +117,7 @@
         </div>
       </div>
 
-      <!-- taskbar -->
-      <div class="taskbar">
-        <div class="task-item active" id="taskTitle">
-          BIG BUSINESS™ Profit Maximizer
-        </div>
-        <div class="tray"><span id="clock">9:01 AM</span></div>
-      </div>
-    </div>
-
-    <!-- investigation modal (Win98 dialog) -->
+      <!-- investigation modal (Win98 dialog) -->
     <div id="modal" class="modal hidden">
       <div class="window dialog">
         <div class="title-bar">
@@ -244,7 +244,7 @@
             </ol>
             <p class="warn-line">
               ⚠ <b>Heat hits 100%</b> → SEC raid. They seize some earnings and
-              reset heat to 40%. Earnings seized are worse every time.
+              reset heat to 50%. Earnings seized are worse every time.
             </p>
             <p class="warn-line">
               <b>GAME OVER</b> happens two ways: <br />•

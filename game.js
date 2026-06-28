@@ -31,28 +31,28 @@ const GENERATORS = [
     desc: "Book 20 years of profit today.",
     baseCost: 15000,
     cps: 200,
-    heat: 0.02,
+    heat: 0.04,
   },
   {
     id: "spe",
     name: "Special Purpose Entity",
-    desc: "Meet Raptor, Chewco & LJM.",
+    desc: "Vandelay Industries.",
     baseCost: 110000,
     cps: 1500,
-    heat: 0.08,
+    heat: 0.1,
   },
   {
     id: "trader",
-    name: "California Energy Trader",
-    desc: "Cause blackout, resell at 10x.",
+    name: "Energy Trader",
+    desc: "Cause a blackout, and resell at 10x.",
     baseCost: 1300000,
     cps: 9000,
-    heat: 0.4,
+    heat: 0.5,
   },
   {
     id: "auditor",
-    name: "Arthur Andersen Auditor",
-    desc: "Signs anything. Owns a shredder.",
+    name: "In-House Auditor",
+    desc: "Signs anything and owns a shredder.",
     baseCost: 14000000,
     cps: 12000,
     heat: -0.8,
@@ -67,16 +67,16 @@ const GENERATORS = [
   },
   {
     id: "shell",
-    name: "Offshore Cayman Shell Co.",
-    desc: "Nesting-doll companies. Untraceable.",
+    name: "Offshore Shell Co.",
+    desc: "Companies inside companies inside companies inside...",
     baseCost: 2000000000,
     cps: 500000,
-    heat: -2.2,
+    heat: -2,
   },
   {
     id: "lobby",
     name: "Congressional Lobbyist",
-    desc: "Buy the referees.",
+    desc: "An 80 year old white man in your back pocket.",
     baseCost: 25000000000,
     cps: 4000000,
     heat: -5,
@@ -108,10 +108,10 @@ const UPGRADES = [
   },
   {
     id: "secretary",
-    name: "Damage-Control Secretary",
-    desc: "Auto-shreds at 100% heat, resetting it to 10%. 3 uses.",
-    cost: 7500,
-    charges: 3, // consumable: auto-saves from investigation 3 times
+    name: "The Fixer",
+    desc: "Auto-shreds at 100% heat, resetting it to 10%. One-time-use.",
+    cost: 8000,
+    charges: 1, // consumable: auto-saves from investigation 3 times
   },
   {
     id: "restate",
@@ -166,9 +166,9 @@ const UPGRADES = [
   {
     id: "pr",
     name: "Pump-&-Dump PR Firm",
-    desc: "All earnings ×2.",
+    desc: "All earnings ×1.5.",
     cost: 12000000,
-    effect: { earnMult: 2 },
+    effect: { earnMult: 1.5 },
   },
 ];
 
@@ -222,6 +222,7 @@ function buy(gen) {
   if (state.currency < cost) return;
   state.currency -= cost;
   state.owned[gen.id] = (state.owned[gen.id] || 0) + 1;
+  pushNews("{NAME} quietly spins up another " + gen.name + ".", "");
   renderShop();
   render();
 }
@@ -247,6 +248,7 @@ function buyUpgrade(up) {
   renderUpgrades();
   render();
   flashStatus("Acquired: " + up.name);
+  pushNews("{NAME} adopts " + up.name + "; board calls it 'prudent'.", "");
 }
 
 function addEarnings(amount) {
@@ -256,7 +258,7 @@ function addEarnings(amount) {
 }
 
 function click(ev) {
-  if (paused || raidActive) return;
+  if (raidActive) return;
   const gain = state.perClick * upgMult("earnMult");
   addEarnings(gain);
   state.suspicion += TUNING.clickHeat * upgMult("clickHeatMult");
@@ -285,16 +287,6 @@ function clampHeat() {
   }
 }
 
-// manual pause via Control Panel: freezes earnings, heat, clicking, shredding
-let paused = false;
-function togglePause() {
-  paused = !paused;
-  const btn = document.getElementById("pauseBtn");
-  if (btn) btn.textContent = paused ? "▶ Resume" : "⏸ Pause";
-  flashStatus(paused ? "Game paused." : "Back to cooking the books.");
-  render();
-}
-
 // while an SEC raid modal is up (pre "lawyer up"), freeze earnings + heat
 let raidActive = false;
 function triggerInvestigation() {
@@ -313,6 +305,10 @@ function triggerInvestigation() {
   const seized = state.currency * lossFrac;
   state.currency -= seized;
   state.suspicion = TUNING.investigationReset;
+  pushNews(
+    "SEC RAIDS {NAME}! " + format(seized) + " in 'earnings' seized.",
+    "breaking",
+  );
   showModal(
     "SEC INVESTIGATION #" + state.investigations,
     "The feds froze the books. <b>" +
@@ -332,7 +328,7 @@ function shredCooldown() {
   return TUNING.shredCooldownMs * upgMult("cooldownMult");
 }
 function shred() {
-  if (paused || raidActive) return;
+  if (raidActive) return;
   const now = Date.now();
   if (now - lastShred < shredCooldown()) return;
   lastShred = now;
@@ -348,12 +344,13 @@ function tick() {
   const now = Date.now();
   const dt = (now - lastTick) / 1000;
   lastTick = now;
-  // raid modal up or manually paused: freeze earnings + heat
-  if (!raidActive && !paused) {
+  // raid modal up: freeze earnings + heat
+  if (!raidActive) {
     addEarnings(totalCps() * upgMult("earnMult") * dt);
     state.suspicion += heatRate() * dt;
     clampHeat();
   }
+  newsTick();
   render();
 }
 
@@ -403,6 +400,9 @@ function hardReset() {
   state.peakEarnings = 0;
   state.secretaryCharges = 0;
   state.company = null;
+  news.lastHeatBucket = 0;
+  news.lastDown = null;
+  news.lastTier = 0;
   renderShop();
   renderUpgrades();
   render();
@@ -425,6 +425,7 @@ function reset() {
 // forced bankruptcy after MAX_INVESTIGATIONS
 function gameOver() {
   const name = state.company ? state.company.name : "Your shell";
+  pushNews("FBI RAIDS " + name + " — executives perp-walked.", "breaking");
   recordScore(); // logs final peak under current company
   hardReset();
   showModal(
@@ -434,7 +435,7 @@ function gameOver() {
       " SEC investigations</b>, the FBI raided " +
       name +
       ". Assets frozen, books subpoenaed, you're doing a perp walk. " +
-      "The company is finished. Your high score has been filed in the Hall of Shame.",
+      "The company is finished. Your high score has been saved.",
   );
 }
 
@@ -442,6 +443,10 @@ function gameOver() {
 function delist() {
   const name = state.company ? state.company.name : "Your shell";
   const sym = state.company ? state.company.ticker : "BIGB";
+  pushNews(
+    sym + " DELISTED from NASDAQ at $0.26 — shares worthless.",
+    "breaking",
+  );
   recordScore();
   hardReset();
   showModal(
@@ -451,7 +456,7 @@ function delist() {
       "</b> cratered to $0.26 and was kicked off the NASDAQ. " +
       name +
       " is worthless, employee 401(k)s are vaporized, and the press " +
-      "smells blood. Game over. Your high score has been filed in the Hall of Shame.",
+      "smells blood. Game over. Your high score has been saved.",
   );
 }
 
@@ -459,8 +464,9 @@ function delist() {
 function applyCompany() {
   if (!state.company) return;
   document.getElementById("tickerSym").textContent = state.company.ticker;
-  document.getElementById("taskTitle").textContent =
-    state.company.name + " Profit Maximizer";
+  const taskTitle = document.getElementById("taskTitle");
+  if (taskTitle)
+    taskTitle.textContent = state.company.name + " Profit Maximizer";
 }
 
 function showSetup() {
@@ -497,6 +503,10 @@ function submitSetup() {
   save();
   document.getElementById("setupModal").classList.add("hidden");
   flashStatus(name + " (" + ticker + ") is open for business.");
+  pushNews(
+    name + " (" + ticker + ") files for IPO at $" + IPO_PRICE + ".",
+    "good",
+  );
 }
 
 // ---- High scores ----
@@ -565,6 +575,7 @@ function closeScores() {
 const el = {
   currency: document.getElementById("currency"),
   cps: document.getElementById("cps"),
+  heatRate: document.getElementById("heatRate"),
   perClick: document.getElementById("perClick"),
   shop: document.getElementById("shop"),
   upgrades: document.getElementById("upgrades"),
@@ -601,6 +612,8 @@ function format(n) {
 function render() {
   el.currency.textContent = format(Math.floor(state.currency));
   el.cps.textContent = format(totalCps());
+  const hr = heatRate();
+  el.heatRate.textContent = (hr >= 0 ? "+" : "") + hr.toFixed(2) + "%";
   el.perClick.textContent = format(state.perClick);
 
   // suspicion meter
@@ -610,8 +623,7 @@ function render() {
   el.suspicionBar.classList.toggle("hot", pct >= 75);
 
   // shred cooldown
-  el.shredBtn.disabled =
-    paused || raidActive || Date.now() - lastShred < shredCooldown();
+  el.shredBtn.disabled = raidActive || Date.now() - lastShred < shredCooldown();
 
   // fake stock price: climbs with peak earnings, tanks with heat + raid damage
   const raw = sharePrice();
@@ -734,6 +746,117 @@ function tickClock() {
   clock.textContent = h + ":" + m + " " + ap;
 }
 
+// ---- News ticker ----
+// Scrolls one headline at a time across the BIZWIRE bar. Headlines come from a
+// reactive event queue (raids, buys, heat, stock swings) plus idle flavor.
+const news = {
+  queue: [], // [{ text, kind }] kind: "" | "breaking" | "good"
+  running: false,
+  lastHeatBucket: 0, // last heat threshold we reported (0/75)
+  lastDown: null, // last known stock direction (true = ▼)
+  lastTier: 0, // last reported earnings power-of-ten
+};
+
+const NEWS_IDLE = [
+  "Analysts rate {SYM} a STRONG BUY.",
+  "{NAME} unveils synergy-forward paradigm; share buyback rumored.",
+  "CNBC: “{SYM} is the smartest company in the room.”",
+  "{NAME} CFO named 'Most Innovative' for off-balance-sheet artistry.",
+  "Mad Money: “BOOYAH! Back up the truck on {SYM}!”",
+  "{NAME} reports record earnings for the 14th straight quarter.",
+  "Pension funds pile into {SYM}; fundamentals 'irrelevant', says fund.",
+  "{NAME} opens new Cayman 'satellite office' (a mailbox).",
+  "Wall Street loves {SYM}: price target raised to the moon.",
+  "{NAME} employees encouraged to hold {SYM} in their 401(k).",
+  "Quarterly footnotes now longer than the actual report.",
+  "{SYM} added to index funds; index funds now confused.",
+  "{NAME} shreds Q3 documents 'for the environment'.",
+  "Auditor signs off, asks no questions, bills $40M.",
+];
+
+function newsCompany() {
+  return {
+    sym: state.company ? state.company.ticker : "BIGB",
+    name: state.company ? state.company.name : "the company",
+  };
+}
+
+function newsFill(text) {
+  const c = newsCompany();
+  return text.replace(/\{SYM\}/g, c.sym).replace(/\{NAME\}/g, c.name);
+}
+
+// queue a headline. breaking jumps the line; everything else appends.
+function pushNews(text, kind) {
+  const item = { text: newsFill(text), kind: kind || "" };
+  if (kind === "breaking") news.queue.unshift(item);
+  else news.queue.push(item);
+  if (!news.running) advanceNews();
+}
+
+function pickIdle() {
+  return NEWS_IDLE[Math.floor(Math.random() * NEWS_IDLE.length)];
+}
+
+function advanceNews() {
+  const tape = document.getElementById("newsTape");
+  const bar = document.getElementById("newsTicker");
+  const label = document.getElementById("newsLabel");
+  if (!tape || !bar) return;
+  if (!news.queue.length)
+    news.queue.push({ text: newsFill(pickIdle()), kind: "" });
+  const item = news.queue.shift();
+  news.running = true;
+
+  tape.className = "";
+  tape.textContent = item.text;
+  bar.classList.toggle("breaking", item.kind === "breaking");
+  bar.classList.toggle("good", item.kind === "good");
+  label.textContent = item.kind === "breaking" ? "BREAKING" : "NEWSMASTER";
+
+  // scroll speed scales with length so long headlines aren't faster
+  const dur = Math.max(7, item.text.length * 0.13);
+  // restart animation
+  void tape.offsetWidth;
+  tape.style.animationDuration = dur + "s";
+  tape.classList.add("run");
+  if (item.kind) tape.classList.add(item.kind);
+}
+
+function onNewsEnd() {
+  news.running = false;
+  advanceNews();
+}
+
+// ambient reactions to game state, called each tick
+function newsTick() {
+  // heat warning crossing 75%
+  const bucket = state.suspicion >= 75 ? 75 : 0;
+  if (bucket > news.lastHeatBucket) {
+    pushNews("SEC reportedly 'taking a closer look' at {NAME}.", "breaking");
+  }
+  news.lastHeatBucket = bucket;
+
+  // stock direction flips
+  const down = sharePrice() < IPO_PRICE;
+  if (news.lastDown !== null && down !== news.lastDown) {
+    if (down) pushNews("{SYM} slips below IPO price as doubts swirl.", "");
+    else pushNews("{SYM} rallies past IPO price on profits!", "good");
+  }
+  news.lastDown = down;
+
+  // earnings milestones (each new power of ten)
+  const tier =
+    state.peakEarnings >= 1 ? Math.floor(Math.log10(state.peakEarnings)) : 0;
+  if (tier > news.lastTier && news.lastTier > 0) {
+    pushNews(
+      "{NAME} 'earnings' blow past " + format(Math.pow(10, tier)) + "!",
+      "good",
+    );
+  }
+  news.lastTier = tier;
+}
+
 // ---- Modal ----
 function showModal(title, bodyHtml) {
   document.getElementById("modalTitle").textContent = title;
@@ -756,7 +879,6 @@ function init() {
   document.getElementById("clickBtn").addEventListener("click", click);
   document.getElementById("shredBtn").addEventListener("click", shred);
   document.getElementById("saveBtn").addEventListener("click", save);
-  document.getElementById("pauseBtn").addEventListener("click", togglePause);
   document.getElementById("resetBtn").addEventListener("click", reset);
   document.getElementById("modalClose").addEventListener("click", closeModal);
   document.getElementById("modalCloseX").addEventListener("click", closeModal);
@@ -778,6 +900,9 @@ function init() {
     .addEventListener("keydown", (e) => {
       if (e.key === "Enter") submitSetup();
     });
+  const newsTape = document.getElementById("newsTape");
+  if (newsTape) newsTape.addEventListener("animationend", onNewsEnd);
+  advanceNews(); // start the ticker rolling
   tickClock();
   setInterval(tickClock, 10000);
   lastTick = Date.now();
