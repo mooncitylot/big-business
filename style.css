@@ -6,9 +6,9 @@
   --hi: #ffffff; /* top-left bevel highlight */
   --sh: #808080; /* bottom-right bevel shadow */
   --sh-dark: #404040;
-  --title-a: #0a246a; /* vista title gradient */
-  --title-b: #3a6ea5;
-  --title-c: #a6caf0;
+  --title-a: #333333; /* vista title gradient */
+  --title-b: #666666;
+  --title-c: #999999;
   --text: #000;
   --green: #008000;
   --money: #006000;
@@ -428,8 +428,8 @@ legend {
   align-items: center;
   gap: 6px;
   padding: 2px 4px;
-  background: linear-gradient(180deg, #3a6ea5 0%, #245edb 8%, #1941a5 100%);
-  border-top: 1px solid #6fa8e0;
+  background: linear-gradient(180deg, #999999 0%, #666666 8%, #333333 100%);
+  border-top: 1px solid #222222;
   z-index: 40;
 }
 .start-btn {
@@ -467,7 +467,7 @@ legend {
   padding: 4px 10px;
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 3px;
-  background: linear-gradient(180deg, #2a6abf, #1a4aa5);
+  background: linear-gradient(180deg, #666666, #999999);
 }
 
 /* ---- floating click text ---- */

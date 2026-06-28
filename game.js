@@ -1,7 +1,7 @@
 // ---- BIG BUSINESS SIMULATOR ----
 // Parody idle clicker. Edit GENERATORS / TUNING to design the game.
 
-const SAVE_KEY = "big-business-sim-save";
+const SAVE_KEY = "big-business-sim-save-v2";
 const SCORES_KEY = "big-business-sim-scores";
 const MAX_SCORES = 10;
 const MAX_INVESTIGATIONS = 4; // hit this many -> auto game over
@@ -12,12 +12,12 @@ const AUTOSAVE_MS = 15000; // autosave interval
 const COST_GROWTH = 1.15; // price multiplier per owned unit
 
 const TUNING = {
-  clickHeat: 0.4, // suspicion added per manual "Mark to Market"
-  shredCut: 12, // suspicion removed per shred click
+  clickHeat: 0.25, // suspicion added per manual "Mark to Market"
+  shredCut: 14, // suspicion removed per shred click
   shredCooldownMs: 1500, // shred button cooldown
-  investigationLoss: 0.4, // fraction of earnings seized at 100% heat
-  investigationReset: 50, // heat left after an investigation
-  heatPerEarning: 0.000003, // passive heat per $ of reported earnings booked
+  investigationLoss: 0.35, // fraction of earnings seized at 100% heat
+  investigationReset: 40, // heat left after an investigation
+  heatPerEarning: 0.0000000015, // passive heat per $ booked (money scaled ×1000)
 };
 
 // Each generator:
@@ -29,56 +29,56 @@ const GENERATORS = [
     id: "mtm",
     name: "Mark-to-Market Spreadsheet",
     desc: "Book 20 years of profit today.",
-    baseCost: 15,
-    cps: 0.2,
-    heat: 0.03,
+    baseCost: 15000,
+    cps: 200,
+    heat: 0.02,
   },
   {
     id: "spe",
     name: "Special Purpose Entity",
     desc: "Meet Raptor, Chewco & LJM.",
-    baseCost: 110,
-    cps: 1.5,
-    heat: 0.12,
+    baseCost: 110000,
+    cps: 1500,
+    heat: 0.08,
   },
   {
     id: "trader",
     name: "California Energy Trader",
     desc: "Cause blackout, resell at 10x.",
-    baseCost: 1300,
-    cps: 9,
-    heat: 0.6,
+    baseCost: 1300000,
+    cps: 9000,
+    heat: 0.4,
   },
   {
     id: "auditor",
     name: "Arthur Andersen Auditor",
     desc: "Signs anything. Owns a shredder.",
-    baseCost: 14000,
-    cps: 12,
+    baseCost: 14000000,
+    cps: 12000,
     heat: -0.8,
   },
   {
     id: "broadband",
     name: "Broadband Futures Desk",
     desc: "Sell bandwidth that doesn't exist.",
-    baseCost: 160000,
-    cps: 90,
-    heat: 1.5,
+    baseCost: 160000000,
+    cps: 90000,
+    heat: 1.0,
   },
   {
     id: "shell",
     name: "Offshore Cayman Shell Co.",
     desc: "Nesting-doll companies. Untraceable.",
-    baseCost: 2000000,
-    cps: 500,
+    baseCost: 2000000000,
+    cps: 500000,
     heat: -2.2,
   },
   {
     id: "lobby",
     name: "Congressional Lobbyist",
     desc: "Buy the referees.",
-    baseCost: 25000000,
-    cps: 4000,
+    baseCost: 25000000000,
+    cps: 4000000,
     heat: -5,
   },
 ];
@@ -91,53 +91,83 @@ const GENERATORS = [
 //   lossMult       - earnings seized per SEC raid
 //   earnMult       - all earnings (click + passive); stacks
 const UPGRADES = [
+  // --- entry-level creative accounting: cheap, all lower SEC suspicion ---
+  {
+    id: "ledger",
+    name: "Creative Bookkeeping 101",
+    desc: "All passive heat −15%.",
+    cost: 3000,
+    effect: { heatGainMult: 0.85 },
+  },
+  {
+    id: "rounding",
+    name: "Round in Our Favor",
+    desc: "Click heat −40%.",
+    cost: 5000,
+    effect: { clickHeatMult: 0.6 },
+  },
+  {
+    id: "secretary",
+    name: "Damage-Control Secretary",
+    desc: "Auto-shreds at 100% heat, resetting it to 10%. 3 uses.",
+    cost: 7500,
+    charges: 3, // consumable: auto-saves from investigation 3 times
+  },
+  {
+    id: "restate",
+    name: "Quarterly Restatement",
+    desc: "All passive heat −20% (stacks).",
+    cost: 18000,
+    effect: { heatGainMult: 0.8 },
+  },
+  // --- mid/late damage control ---
   {
     id: "golf",
     name: "Auditor Golf Retreat",
-    desc: "Click heat −60%.",
-    cost: 20000,
+    desc: "Click heat −60% (stacks).",
+    cost: 40000,
     effect: { clickHeatMult: 0.4 },
   },
   {
     id: "shredder",
     name: "Industrial Shredder",
     desc: "Shred removes 2× heat.",
-    cost: 35000,
+    cost: 75000,
     effect: { shredMult: 2 },
   },
   {
     id: "retention",
     name: "Document Retention Policy",
     desc: "Shred cooldown −50%.",
-    cost: 60000,
+    cost: 150000,
     effect: { cooldownMult: 0.5 },
   },
   {
     id: "footnotes",
     name: "Aggressive Footnotes",
-    desc: "All passive heat −25%.",
-    cost: 120000,
+    desc: "All passive heat −25% (stacks).",
+    cost: 350000,
     effect: { heatGainMult: 0.75 },
   },
   {
     id: "revolving",
     name: "Revolving-Door Lawyers",
     desc: "SEC seizes 30% less per raid.",
-    cost: 400000,
+    cost: 900000,
     effect: { lossMult: 0.7 },
   },
   {
     id: "offbalance",
     name: "Off-Balance-Sheet Magic",
     desc: "All passive heat −40% (stacks).",
-    cost: 1500000,
+    cost: 3000000,
     effect: { heatGainMult: 0.6 },
   },
   {
     id: "pr",
     name: "Pump-&-Dump PR Firm",
     desc: "All earnings ×2.",
-    cost: 5000000,
+    cost: 12000000,
     effect: { earnMult: 2 },
   },
 ];
@@ -145,12 +175,13 @@ const UPGRADES = [
 // ---- Game state ----
 const state = {
   currency: 0,
-  perClick: 1,
+  perClick: 1000,
   owned: {},
   upgrades: {},
   suspicion: 0,
   investigations: 0,
   peakEarnings: 0,
+  secretaryCharges: 0, // remaining auto-shred saves from Damage-Control Secretary
   company: null, // { name, ticker }
   lastSeen: Date.now(),
 };
@@ -199,16 +230,20 @@ function buy(gen) {
 function upgMult(key) {
   let m = 1;
   for (const u of UPGRADES) {
-    if (state.upgrades[u.id] && u.effect[key] != null) m *= u.effect[key];
+    if (state.upgrades[u.id] && u.effect && u.effect[key] != null)
+      m *= u.effect[key];
   }
   return m;
 }
 
 function buyUpgrade(up) {
-  if (state.upgrades[up.id]) return; // already owned
+  // consumables can be re-bought once spent; permanent upgrades only once
+  const depleted = !!up.charges && state.secretaryCharges <= 0;
+  if (state.upgrades[up.id] && !depleted) return; // already owned
   if (state.currency < up.cost) return;
   state.currency -= up.cost;
   state.upgrades[up.id] = true;
+  if (up.charges) state.secretaryCharges = up.charges;
   renderUpgrades();
   render();
   flashStatus("Acquired: " + up.name);
@@ -221,6 +256,7 @@ function addEarnings(amount) {
 }
 
 function click(ev) {
+  if (paused || raidActive) return;
   const gain = state.perClick * upgMult("earnMult");
   addEarnings(gain);
   state.suspicion += TUNING.clickHeat * upgMult("clickHeatMult");
@@ -232,15 +268,42 @@ function click(ev) {
 // ---- Suspicion ----
 function clampHeat() {
   if (state.suspicion < 0) state.suspicion = 0;
-  if (state.suspicion >= 100) triggerInvestigation();
+  if (state.suspicion >= 100) {
+    // Secretary auto-shreds before the SEC shows up, while charges remain
+    if (state.secretaryCharges > 0) {
+      state.secretaryCharges--;
+      state.suspicion = 10;
+      renderUpgrades();
+      flashStatus(
+        "Secretary shredded everything. Heat → 10%. " +
+          state.secretaryCharges +
+          " use(s) left.",
+      );
+      return;
+    }
+    triggerInvestigation();
+  }
 }
 
+// manual pause via Control Panel: freezes earnings, heat, clicking, shredding
+let paused = false;
+function togglePause() {
+  paused = !paused;
+  const btn = document.getElementById("pauseBtn");
+  if (btn) btn.textContent = paused ? "▶ Resume" : "⏸ Pause";
+  flashStatus(paused ? "Game paused." : "Back to cooking the books.");
+  render();
+}
+
+// while an SEC raid modal is up (pre "lawyer up"), freeze earnings + heat
+let raidActive = false;
 function triggerInvestigation() {
   state.investigations++;
   if (state.investigations >= MAX_INVESTIGATIONS) {
     gameOver();
     return;
   }
+  raidActive = true;
   // repeat offenses bite harder
   const lossFrac = Math.min(
     0.85,
@@ -252,7 +315,7 @@ function triggerInvestigation() {
   state.suspicion = TUNING.investigationReset;
   showModal(
     "SEC INVESTIGATION #" + state.investigations,
-    "The feds froze the books. <b>$" +
+    "The feds froze the books. <b>" +
       format(seized) +
       "</b> in reported earnings " +
       "vanished (" +
@@ -269,6 +332,7 @@ function shredCooldown() {
   return TUNING.shredCooldownMs * upgMult("cooldownMult");
 }
 function shred() {
+  if (paused || raidActive) return;
   const now = Date.now();
   if (now - lastShred < shredCooldown()) return;
   lastShred = now;
@@ -284,9 +348,12 @@ function tick() {
   const now = Date.now();
   const dt = (now - lastTick) / 1000;
   lastTick = now;
-  addEarnings(totalCps() * upgMult("earnMult") * dt);
-  state.suspicion += heatRate() * dt;
-  clampHeat();
+  // raid modal up or manually paused: freeze earnings + heat
+  if (!raidActive && !paused) {
+    addEarnings(totalCps() * upgMult("earnMult") * dt);
+    state.suspicion += heatRate() * dt;
+    clampHeat();
+  }
   render();
 }
 
@@ -320,7 +387,7 @@ function applyOfflineEarnings() {
     addEarnings(earned);
     state.suspicion += heatRate() * elapsed;
     clampHeat();
-    flashStatus("Booked $" + format(earned) + " in 'profits' while away");
+    flashStatus("Booked " + format(earned) + " in 'profits' while away");
   }
 }
 
@@ -328,12 +395,13 @@ function applyOfflineEarnings() {
 function hardReset() {
   localStorage.removeItem(SAVE_KEY);
   state.currency = 0;
-  state.perClick = 1;
+  state.perClick = 1000;
   state.owned = {};
   state.upgrades = {};
   state.suspicion = 0;
   state.investigations = 0;
   state.peakEarnings = 0;
+  state.secretaryCharges = 0;
   state.company = null;
   renderShop();
   renderUpgrades();
@@ -474,14 +542,14 @@ function renderScores() {
     rows += `<div class="nasdaq-row ${i === 0 ? "top1" : ""}" title="${s.name || ""}">
       <span class="rank">${i + 1}</span>
       <span class="ticker-sym">${s.sym}</span>
-      <span class="score">$${format(s.score)}</span>
+      <span class="score">${format(s.score)}</span>
       <span class="meta">▲ ${s.investigations}</span>
     </div>`;
   });
   body.innerHTML = rows;
 
   tape.textContent =
-    scores.map((s) => `${s.sym} $${format(s.score)} ▲`).join("     ") + "     ";
+    scores.map((s) => `${s.sym} ${format(s.score)} ▲`).join("     ") + "     ";
 }
 
 function openScores() {
@@ -509,14 +577,25 @@ const el = {
   ticker: document.querySelector(".ticker"),
 };
 
+// money formatter: "$100,000.00". Above 1e9 use compact $1.23B to keep layout sane.
 function format(n) {
-  if (n < 1000) {
-    if (Number.isInteger(n)) return String(n);
-    return n < 10 ? n.toFixed(1) : String(Math.floor(n));
+  n = Number(n) || 0;
+  const neg = n < 0;
+  n = Math.abs(n);
+  let s;
+  if (n >= 1e9) {
+    const units = ["", "", "", "B", "T", "Qa", "Qi"];
+    const tier = Math.min(Math.floor(Math.log10(n) / 3), units.length - 1);
+    s = "$" + (n / Math.pow(1000, tier)).toFixed(2) + units[tier];
+  } else {
+    s =
+      "$" +
+      n.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
   }
-  const units = ["", "K", "M", "B", "T", "Qa", "Qi"];
-  const tier = Math.min(Math.floor(Math.log10(n) / 3), units.length - 1);
-  return (n / Math.pow(1000, tier)).toFixed(2) + units[tier];
+  return neg ? "-" + s : s;
 }
 
 function render() {
@@ -531,7 +610,8 @@ function render() {
   el.suspicionBar.classList.toggle("hot", pct >= 75);
 
   // shred cooldown
-  el.shredBtn.disabled = Date.now() - lastShred < shredCooldown();
+  el.shredBtn.disabled =
+    paused || raidActive || Date.now() - lastShred < shredCooldown();
 
   // fake stock price: climbs with peak earnings, tanks with heat + raid damage
   const raw = sharePrice();
@@ -577,21 +657,22 @@ function renderUpgrades() {
   if (!el.upgrades) return;
   el.upgrades.innerHTML = "";
   for (const up of UPGRADES) {
-    const owned = !!state.upgrades[up.id];
+    // consumables are re-buyable once their charges are spent
+    const depleted = !!up.charges && state.secretaryCharges <= 0;
+    const owned = !!state.upgrades[up.id] && !depleted;
     const node = document.createElement("div");
     node.className = "shop-item upgrade" + (owned ? " owned" : "");
     node.id = "upg-" + up.id;
+    const ownedTag = up.charges
+      ? `<div class="owned-tag">${state.secretaryCharges} LEFT</div>`
+      : '<div class="owned-tag">OWNED</div>';
     node.innerHTML = `
       <div class="item-info">
         <div class="name">${up.name}</div>
         <div class="desc">${up.desc}</div>
       </div>
       <div class="item-buy">
-        ${
-          owned
-            ? '<div class="owned-tag">OWNED</div>'
-            : `<div class="cost">${format(up.cost)}</div>`
-        }
+        ${owned ? ownedTag : `<div class="cost">${format(up.cost)}</div>`}
       </div>`;
     if (!owned) node.addEventListener("click", () => buyUpgrade(up));
     el.upgrades.appendChild(node);
@@ -660,6 +741,7 @@ function showModal(title, bodyHtml) {
   document.getElementById("modal").classList.remove("hidden");
 }
 function closeModal() {
+  raidActive = false; // lawyered up -> resume earnings + heat
   document.getElementById("modal").classList.add("hidden");
   if (!state.company) openScores(); // game over -> show Hall of Shame, then re-incorporate
 }
@@ -674,6 +756,7 @@ function init() {
   document.getElementById("clickBtn").addEventListener("click", click);
   document.getElementById("shredBtn").addEventListener("click", shred);
   document.getElementById("saveBtn").addEventListener("click", save);
+  document.getElementById("pauseBtn").addEventListener("click", togglePause);
   document.getElementById("resetBtn").addEventListener("click", reset);
   document.getElementById("modalClose").addEventListener("click", closeModal);
   document.getElementById("modalCloseX").addEventListener("click", closeModal);
