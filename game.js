@@ -741,9 +741,13 @@ function render() {
     costEl.textContent = format(cost);
     costEl.classList.toggle("affordable", affordable);
     node.querySelector(".count-n").textContent = state.owned[gen.id] || 0;
-    const nameEl = node.querySelector(".name");
-    nameEl.textContent = revealed ? gen.name : "?????";
-    nameEl.classList.toggle("mystery", !revealed);
+    setMystery(node.querySelector(".name"), gen.name, revealed);
+    setMystery(node.querySelector(".desc"), gen.desc, revealed);
+    const statsEl = node.querySelector(".stats");
+    if (statsEl) {
+      statsEl.innerHTML = revealed ? genStatsHTML(gen) : "?????";
+      statsEl.classList.toggle("mystery", !revealed);
+    }
   }
 
   // upgrade affordability
@@ -758,12 +762,25 @@ function render() {
     node.classList.toggle("locked", !affordable);
     const costEl = node.querySelector(".cost");
     if (costEl) costEl.classList.toggle("affordable", !owned && affordable);
-    const nameEl = node.querySelector(".name");
-    if (nameEl) {
-      nameEl.textContent = revealed ? up.name : "?????";
-      nameEl.classList.toggle("mystery", !revealed);
-    }
+    setMystery(node.querySelector(".name"), up.name, revealed);
+    setMystery(node.querySelector(".desc"), up.desc, revealed);
   }
+}
+
+// swap an item-info element between its real text and the "?????" mask
+function setMystery(elm, text, revealed) {
+  if (!elm) return;
+  elm.textContent = revealed ? text : "?????";
+  elm.classList.toggle("mystery", !revealed);
+}
+
+// the "+cps/s · heat" line for a generator, with heat color-coded
+function genStatsHTML(gen) {
+  const heatTxt =
+    gen.heat >= 0
+      ? `<span class="heat up">+${gen.heat}/s heat</span>`
+      : `<span class="heat down">${gen.heat}/s heat (hides)</span>`;
+  return `+${format(gen.cps)}/s &middot; ${heatTxt}`;
 }
 
 function renderUpgrades() {
@@ -780,10 +797,11 @@ function renderUpgrades() {
     const ownedTag = up.charges
       ? `<div class="owned-tag">${state.secretaryCharges} LEFT</div>`
       : '<div class="owned-tag">OWNED</div>';
+    const mysteryCls = revealed ? "" : " mystery";
     node.innerHTML = `
       <div class="item-info">
-        <div class="name${revealed ? "" : " mystery"}">${revealed ? up.name : "?????"}</div>
-        <div class="desc">${up.desc}</div>
+        <div class="name${mysteryCls}">${revealed ? up.name : "?????"}</div>
+        <div class="desc${mysteryCls}">${revealed ? up.desc : "?????"}</div>
       </div>
       <div class="item-buy">
         ${owned ? ownedTag : `<div class="cost">${format(up.cost)}</div>`}
@@ -798,18 +816,15 @@ function renderShop() {
   for (const gen of GENERATORS) {
     const count = state.owned[gen.id] || 0;
     const revealed = !!state.revealedGens[gen.id];
-    const heatTxt =
-      gen.heat >= 0
-        ? `<span class="heat up">+${gen.heat}/s heat</span>`
-        : `<span class="heat down">${gen.heat}/s heat (hides)</span>`;
+    const mysteryCls = revealed ? "" : " mystery";
     const node = document.createElement("div");
     node.className = "shop-item";
     node.id = "item-" + gen.id;
     node.innerHTML = `
       <div class="item-info">
-        <div class="name${revealed ? "" : " mystery"}">${revealed ? gen.name : "?????"}</div>
-        <div class="desc">${gen.desc}</div>
-        <div>+${format(gen.cps)}/s &middot; ${heatTxt}</div>
+        <div class="name${mysteryCls}">${revealed ? gen.name : "?????"}</div>
+        <div class="desc${mysteryCls}">${revealed ? gen.desc : "?????"}</div>
+        <div class="stats${mysteryCls}">${revealed ? genStatsHTML(gen) : "?????"}</div>
       </div>
       <div class="item-buy">
         <div class="cost">${format(generatorCost(gen))}</div>
