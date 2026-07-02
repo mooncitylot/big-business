@@ -213,6 +213,31 @@ legend {
   color: #333;
 }
 
+/* ---- career ladder (sunken, promotion-blue) ---- */
+.career {
+  margin-bottom: 10px;
+}
+.career-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+.career-next {
+  font-weight: 400;
+  font-size: 11px;
+  color: #333;
+}
+.career-fill {
+  background:
+    repeating-linear-gradient(90deg, #1a5fd8 0 10px, transparent 10px 12px),
+    linear-gradient(180deg, #66a3ff, #0b3f9c);
+  transition:
+    width 0.4s ease-out,
+    filter 0.15s linear;
+}
+
 /* ---- suspicion meter (sunken) ---- */
 .suspicion {
   margin-bottom: 10px;

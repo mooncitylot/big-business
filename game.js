@@ -172,6 +172,23 @@ const UPGRADES = [
   },
 ];
 
+// Career ladder: a linear sequence of job titles, promoted in order as
+// peak earnings cross each tier (power-of-ten threshold). No branching,
+// no skipping — one rank after another, Underwriter -> CEO.
+const LEVELS = [
+  { title: "Underwriter", tier: 0 },
+  { title: "Junior Analyst", tier: 4 },
+  { title: "Senior Analyst", tier: 5 },
+  { title: "Associate Director", tier: 6 },
+  { title: "VP of Synergy", tier: 7 },
+  { title: "Senior VP of Strategy", tier: 8 },
+  { title: "Managing Director", tier: 9 },
+  { title: "Executive Vice President", tier: 10 },
+  { title: "Chief Operating Officer", tier: 11 },
+  { title: "President", tier: 12 },
+  { title: "Chief Executive Officer", tier: 13 },
+];
+
 // ---- Game state ----
 const state = {
   currency: 0,
@@ -182,6 +199,7 @@ const state = {
   investigations: 0,
   peakEarnings: 0,
   secretaryCharges: 0, // remaining auto-shred saves from Damage-Control Secretary
+  level: 0, // index into LEVELS
   company: null, // { name, ticker }
   lastSeen: Date.now(),
 };
@@ -215,6 +233,50 @@ function heatRate() {
     0,
   );
   return rate > 0 ? rate * upgMult("heatGainMult") : rate;
+}
+
+// index of the highest rank whose tier threshold peak earnings have crossed
+function currentLevelIndex() {
+  const tier =
+    state.peakEarnings >= 1 ? Math.floor(Math.log10(state.peakEarnings)) : 0;
+  let idx = 0;
+  for (let i = 0; i < LEVELS.length; i++) {
+    if (tier >= LEVELS[i].tier) idx = i;
+  }
+  return idx;
+}
+
+// progress toward the next rank, for the career meter
+function levelProgress() {
+  const idx = currentLevelIndex();
+  if (idx >= LEVELS.length - 1) return { idx, pct: 100, next: null };
+  const cur = LEVELS[idx];
+  const next = LEVELS[idx + 1];
+  const curThreshold = cur.tier === 0 ? 0 : Math.pow(10, cur.tier);
+  const nextThreshold = Math.pow(10, next.tier);
+  const pct = Math.max(
+    0,
+    Math.min(
+      100,
+      ((state.peakEarnings - curThreshold) / (nextThreshold - curThreshold)) *
+        100,
+    ),
+  );
+  return { idx, pct, next };
+}
+
+// promote the player in-order when peak earnings cross the next tier
+function checkPromotion() {
+  const idx = currentLevelIndex();
+  if (idx > state.level) {
+    state.level = idx;
+    const title = LEVELS[idx].title;
+    flashStatus("Promoted to " + title + "!");
+    pushNews(
+      "{NAME} promotes you to " + title + ". Corner office awaits.",
+      "good",
+    );
+  }
 }
 
 function buy(gen) {
@@ -369,6 +431,7 @@ function load() {
     Object.assign(state, data);
     state.owned = data.owned || {};
     state.upgrades = data.upgrades || {};
+    state.level = currentLevelIndex(); // baseline from saved peak earnings
     applyOfflineEarnings();
   } catch (e) {
     console.warn("Bad save, ignoring.", e);
@@ -399,6 +462,7 @@ function hardReset() {
   state.investigations = 0;
   state.peakEarnings = 0;
   state.secretaryCharges = 0;
+  state.level = 0;
   state.company = null;
   news.lastHeatBucket = 0;
   news.lastDown = null;
@@ -586,6 +650,9 @@ const el = {
   stockPrice: document.getElementById("stockPrice"),
   stockArrow: document.getElementById("stockArrow"),
   ticker: document.querySelector(".ticker"),
+  careerTitle: document.getElementById("careerTitle"),
+  careerNext: document.getElementById("careerNext"),
+  careerBar: document.getElementById("careerBar"),
 };
 
 // money formatter: "$100,000.00". Above 1e9 use compact $1.23B to keep layout sane.
@@ -615,6 +682,15 @@ function render() {
   const hr = heatRate();
   el.heatRate.textContent = (hr >= 0 ? "+" : "") + hr.toFixed(2) + "%";
   el.perClick.textContent = format(state.perClick);
+
+  // career ladder
+  checkPromotion();
+  const prog = levelProgress();
+  el.careerTitle.textContent = LEVELS[prog.idx].title;
+  el.careerNext.textContent = prog.next
+    ? "Next: " + prog.next.title + " at " + format(Math.pow(10, prog.next.tier))
+    : "Top of the ladder";
+  el.careerBar.style.width = prog.pct + "%";
 
   // suspicion meter
   const pct = Math.max(0, Math.min(100, state.suspicion));
