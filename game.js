@@ -200,6 +200,8 @@ const state = {
   peakEarnings: 0,
   secretaryCharges: 0, // remaining auto-shred saves from Damage-Control Secretary
   level: 0, // index into LEVELS
+  revealedGens: {}, // gen.id -> true once its title has ever been affordable
+  revealedUpgrades: {}, // up.id -> true once its title has ever been affordable
   company: null, // { name, ticker }
   lastSeen: Date.now(),
 };
@@ -431,6 +433,13 @@ function load() {
     Object.assign(state, data);
     state.owned = data.owned || {};
     state.upgrades = data.upgrades || {};
+    state.revealedGens = data.revealedGens || {};
+    state.revealedUpgrades = data.revealedUpgrades || {};
+    // migrate older saves: anything already owned must have been affordable
+    for (const gen of GENERATORS)
+      if (state.owned[gen.id] > 0) state.revealedGens[gen.id] = true;
+    for (const up of UPGRADES)
+      if (state.upgrades[up.id]) state.revealedUpgrades[up.id] = true;
     state.level = currentLevelIndex(); // baseline from saved peak earnings
     applyOfflineEarnings();
   } catch (e) {
@@ -463,6 +472,8 @@ function hardReset() {
   state.peakEarnings = 0;
   state.secretaryCharges = 0;
   state.level = 0;
+  state.revealedGens = {};
+  state.revealedUpgrades = {};
   state.company = null;
   news.lastHeatBucket = 0;
   news.lastDown = null;
@@ -722,11 +733,17 @@ function render() {
     if (!node) continue;
     const cost = generatorCost(gen);
     const affordable = state.currency >= cost;
+    if (affordable && !state.revealedGens[gen.id])
+      state.revealedGens[gen.id] = true;
+    const revealed = !!state.revealedGens[gen.id];
     node.classList.toggle("locked", !affordable);
     const costEl = node.querySelector(".cost");
     costEl.textContent = format(cost);
     costEl.classList.toggle("affordable", affordable);
     node.querySelector(".count-n").textContent = state.owned[gen.id] || 0;
+    const nameEl = node.querySelector(".name");
+    nameEl.textContent = revealed ? gen.name : "?????";
+    nameEl.classList.toggle("mystery", !revealed);
   }
 
   // upgrade affordability
@@ -735,9 +752,17 @@ function render() {
     if (!node) continue;
     const owned = !!state.upgrades[up.id];
     const affordable = owned || state.currency >= up.cost;
+    if (affordable && !state.revealedUpgrades[up.id])
+      state.revealedUpgrades[up.id] = true;
+    const revealed = owned || !!state.revealedUpgrades[up.id];
     node.classList.toggle("locked", !affordable);
     const costEl = node.querySelector(".cost");
     if (costEl) costEl.classList.toggle("affordable", !owned && affordable);
+    const nameEl = node.querySelector(".name");
+    if (nameEl) {
+      nameEl.textContent = revealed ? up.name : "?????";
+      nameEl.classList.toggle("mystery", !revealed);
+    }
   }
 }
 
@@ -748,6 +773,7 @@ function renderUpgrades() {
     // consumables are re-buyable once their charges are spent
     const depleted = !!up.charges && state.secretaryCharges <= 0;
     const owned = !!state.upgrades[up.id] && !depleted;
+    const revealed = owned || !!state.revealedUpgrades[up.id];
     const node = document.createElement("div");
     node.className = "shop-item upgrade" + (owned ? " owned" : "");
     node.id = "upg-" + up.id;
@@ -756,7 +782,7 @@ function renderUpgrades() {
       : '<div class="owned-tag">OWNED</div>';
     node.innerHTML = `
       <div class="item-info">
-        <div class="name">${up.name}</div>
+        <div class="name${revealed ? "" : " mystery"}">${revealed ? up.name : "?????"}</div>
         <div class="desc">${up.desc}</div>
       </div>
       <div class="item-buy">
@@ -771,6 +797,7 @@ function renderShop() {
   el.shop.innerHTML = "";
   for (const gen of GENERATORS) {
     const count = state.owned[gen.id] || 0;
+    const revealed = !!state.revealedGens[gen.id];
     const heatTxt =
       gen.heat >= 0
         ? `<span class="heat up">+${gen.heat}/s heat</span>`
@@ -780,7 +807,7 @@ function renderShop() {
     node.id = "item-" + gen.id;
     node.innerHTML = `
       <div class="item-info">
-        <div class="name">${gen.name}</div>
+        <div class="name${revealed ? "" : " mystery"}">${revealed ? gen.name : "?????"}</div>
         <div class="desc">${gen.desc}</div>
         <div>+${format(gen.cps)}/s &middot; ${heatTxt}</div>
       </div>

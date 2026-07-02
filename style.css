@@ -409,6 +409,11 @@ legend {
 .item-info .name {
   font-weight: 700;
 }
+.item-info .name.mystery {
+  color: var(--sh);
+  font-style: italic;
+  letter-spacing: 2px;
+}
 .item-info .desc {
   font-size: 11px;
   color: #555;
