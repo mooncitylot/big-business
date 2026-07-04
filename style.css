@@ -807,7 +807,7 @@ legend {
     inset 0 4px 6px rgba(255, 255, 255, 0.5);
 }
 .landing-title {
-  margin: 0 0 8px;
+  margin: 0 0 22px;
   font-size: 24px;
   line-height: 1.2;
   letter-spacing: 1px;
@@ -815,12 +815,6 @@ legend {
 }
 .landing-title span {
   color: var(--money);
-}
-.landing-tag {
-  margin: 0 0 20px;
-  font-style: italic;
-  color: #444;
-  font-size: 12px;
 }
 .landing-buttons {
   display: flex;
