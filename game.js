@@ -354,6 +354,9 @@ function clampHeat() {
 
 // while an SEC raid modal is up (pre "lawyer up"), freeze earnings + heat
 let raidActive = false;
+
+// true once "Start Game" has been clicked on the landing screen
+let gameStarted = false;
 function triggerInvestigation() {
   state.investigations++;
   if (state.investigations >= MAX_INVESTIGATIONS) {
@@ -785,7 +788,9 @@ function openScores() {
 }
 function closeScores() {
   document.getElementById("scoresModal").classList.add("hidden");
-  if (!state.company) showSetup(); // returning from bankruptcy -> re-incorporate
+  // returning from bankruptcy -> re-incorporate (but not if just peeking
+  // at scores from the landing screen before ever starting a game)
+  if (!state.company && gameStarted) showSetup();
 }
 
 // ---- Rendering ----
@@ -1210,8 +1215,15 @@ function init() {
   setInterval(save, AUTOSAVE_MS);
   window.addEventListener("beforeunload", save);
 
-  if (!state.company) showSetup(); // first launch -> incorporate
-  else if (!state.employee) showBadgeSetup(); // migrated save missing a badge
+  document.getElementById("landingStart").addEventListener("click", () => {
+    gameStarted = true;
+    document.getElementById("landingScreen").classList.add("hidden");
+    if (!state.company) showSetup(); // first launch -> incorporate
+    else if (!state.employee) showBadgeSetup(); // migrated save missing a badge
+  });
+  document
+    .getElementById("landingScores")
+    .addEventListener("click", openScores);
 }
 
 init();
