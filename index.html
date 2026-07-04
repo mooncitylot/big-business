@@ -27,6 +27,7 @@
 
         <div class="menu-bar">
           <span id="saveBtn"><span class="u">S</span>ave</span>
+          <span id="badgeMenu">I<span class="u">D</span> Badge</span>
           <span id="scoresBtn"><span class="u">H</span>igh Scores</span>
           <span id="helpMenu"><span class="u">H</span>elp</span>
         </div>
@@ -70,6 +71,21 @@
             </div>
             <div class="meter">
               <div id="careerBar" class="meter-fill career-fill"></div>
+            </div>
+          </fieldset>
+
+          <fieldset id="idBadgeBox" class="id-badge hidden" title="Click to edit your ID badge">
+            <legend>Employee ID</legend>
+            <div class="badge-card">
+              <div class="badge-photo-frame">
+                <img id="badgePhoto" alt="ID photo" />
+              </div>
+              <div class="badge-info">
+                <div class="badge-company" id="badgeCompany">—</div>
+                <div class="badge-name" id="badgeName">—</div>
+                <div class="badge-title" id="badgeTitle">—</div>
+                <div class="badge-barcode">||‖|‖|||‖||‖|||‖|</div>
+              </div>
             </div>
           </fieldset>
 
@@ -188,6 +204,53 @@
       </div>
     </div>
 
+    <!-- employee ID badge wizard -->
+    <div id="badgeModal" class="modal hidden">
+      <div class="window dialog badge-dialog">
+        <div class="title-bar">
+          <div class="title-bar-text">Employee ID Badge Printer</div>
+          <div class="title-bar-controls">
+            <button class="tb-btn close" id="badgeCloseX">✕</button>
+          </div>
+        </div>
+        <div class="window-body">
+          <div class="badge-setup-content">
+            <div class="badge-cam-wrap">
+              <video id="badgeVideo" class="hidden" autoplay playsinline muted></video>
+              <img id="badgePreviewImg" class="hidden" alt="Captured ID photo" />
+              <canvas id="badgeCanvas" class="hidden"></canvas>
+            </div>
+            <div class="badge-setup-fields">
+              <label
+                >Employee Name
+                <input
+                  type="text"
+                  id="employeeNameInput"
+                  maxlength="24"
+                  placeholder="e.g. Jane Skilling"
+                />
+              </label>
+              <div class="badge-cam-buttons">
+                <button id="badgeCaptureBtn" class="win-btn">
+                  📷 Capture
+                </button>
+                <button id="badgeRetakeBtn" class="win-btn hidden">
+                  Retake
+                </button>
+                <button id="badgeSkipCamBtn" class="win-btn">
+                  No Camera
+                </button>
+              </div>
+              <p class="setup-err" id="badgeErr"></p>
+            </div>
+          </div>
+          <div class="dialog-buttons">
+            <button id="badgeConfirmBtn" class="win-btn">Print Badge →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- NASDAQ high scores -->
     <div id="scoresModal" class="modal hidden">
       <div class="window dialog nasdaq-dialog">
@@ -257,6 +320,12 @@
               <b>Career Ladder</b> — your title climbs in order, Underwriter
               to CEO, each time your peak earnings cross a new milestone.
               There's no skipping rungs.
+            </p>
+            <p>
+              <b>Employee ID</b> — print a badge with your name and a photo
+              (camera or placeholder). Your job title updates on the badge as
+              you climb the ladder. Edit it anytime from the <b>ID Badge</b>
+              menu.
             </p>
             <p class="warn-line">
               ⚠ <b>Heat hits 100%</b> → SEC raid. They seize some earnings and

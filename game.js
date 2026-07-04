@@ -203,6 +203,7 @@ const state = {
   revealedGens: {}, // gen.id -> true once its title has ever been affordable
   revealedUpgrades: {}, // up.id -> true once its title has ever been affordable
   company: null, // { name, ticker }
+  employee: null, // { name, photo } once the ID badge has been printed
   lastSeen: Date.now(),
 };
 
@@ -582,6 +583,147 @@ function submitSetup() {
     name + " (" + ticker + ") files for IPO at $" + IPO_PRICE + ".",
     "good",
   );
+  if (!state.employee) showBadgeSetup();
+}
+
+// ---- Employee ID Badge ----
+// grey silhouette used when the player has no camera / declines to use one
+const BADGE_PLACEHOLDER =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    "<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'>" +
+      "<rect width='220' height='220' fill='#9a9a9a'/>" +
+      "<circle cx='110' cy='84' r='46' fill='#d0d0d0'/>" +
+      "<rect x='38' y='142' width='144' height='90' rx='34' fill='#d0d0d0'/>" +
+      "</svg>",
+  );
+
+let badgeStream = null; // active getUserMedia stream, while the modal is open
+let badgePendingPhoto = null; // grayscale dataURL staged before "Print Badge"
+
+function showBadgeSetup() {
+  const modal = document.getElementById("badgeModal");
+  const nameIn = document.getElementById("employeeNameInput");
+  const err = document.getElementById("badgeErr");
+  nameIn.value = state.employee ? state.employee.name : "";
+  err.textContent = "";
+  badgePendingPhoto = state.employee ? state.employee.photo : null;
+  updateBadgePreview();
+  modal.classList.remove("hidden");
+  startBadgeCamera();
+  nameIn.focus();
+}
+
+function closeBadgeModal() {
+  stopBadgeCamera();
+  document.getElementById("badgeModal").classList.add("hidden");
+}
+
+function startBadgeCamera() {
+  const video = document.getElementById("badgeVideo");
+  const err = document.getElementById("badgeErr");
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    err.textContent = "Camera not available here — use 'No Camera' instead.";
+    return;
+  }
+  navigator.mediaDevices
+    .getUserMedia({ video: { facingMode: "user" }, audio: false })
+    .then((stream) => {
+      badgeStream = stream;
+      video.srcObject = stream;
+      if (!badgePendingPhoto) updateBadgePreview();
+    })
+    .catch(() => {
+      err.textContent =
+        "Camera permission denied or unavailable — use 'No Camera' instead.";
+    });
+}
+
+function stopBadgeCamera() {
+  if (badgeStream) {
+    badgeStream.getTracks().forEach((t) => t.stop());
+    badgeStream = null;
+  }
+  document.getElementById("badgeVideo").srcObject = null;
+}
+
+// crop the live video to a square, downscale, and desaturate to grayscale
+function grayscaleFrame(video, size) {
+  const canvas = document.getElementById("badgeCanvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  const vw = video.videoWidth,
+    vh = video.videoHeight;
+  const side = Math.min(vw, vh);
+  const sx = (vw - side) / 2,
+    sy = (vh - side) / 2;
+  ctx.drawImage(video, sx, sy, side, side, 0, 0, size, size);
+  const imgData = ctx.getImageData(0, 0, size, size);
+  const d = imgData.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const gray = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+    d[i] = d[i + 1] = d[i + 2] = gray;
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return canvas.toDataURL("image/jpeg", 0.85);
+}
+
+function captureBadgePhoto() {
+  const video = document.getElementById("badgeVideo");
+  const err = document.getElementById("badgeErr");
+  if (!video.videoWidth) {
+    err.textContent = "Camera isn't ready yet — try again in a moment.";
+    return;
+  }
+  err.textContent = "";
+  badgePendingPhoto = grayscaleFrame(video, 220);
+  updateBadgePreview();
+}
+
+function useNoCameraPhoto() {
+  document.getElementById("badgeErr").textContent = "";
+  badgePendingPhoto = BADGE_PLACEHOLDER;
+  updateBadgePreview();
+}
+
+function retakeBadgePhoto() {
+  badgePendingPhoto = null;
+  updateBadgePreview();
+}
+
+function updateBadgePreview() {
+  const video = document.getElementById("badgeVideo");
+  const img = document.getElementById("badgePreviewImg");
+  const retake = document.getElementById("badgeRetakeBtn");
+  if (badgePendingPhoto) {
+    img.src = badgePendingPhoto;
+    img.classList.remove("hidden");
+    video.classList.add("hidden");
+    retake.classList.remove("hidden");
+  } else {
+    img.classList.add("hidden");
+    retake.classList.add("hidden");
+    if (badgeStream) video.classList.remove("hidden");
+  }
+}
+
+function confirmBadge() {
+  const name = document.getElementById("employeeNameInput").value.trim();
+  const err = document.getElementById("badgeErr");
+  if (name.length < 2) {
+    err.textContent = "Enter your name for the badge.";
+    return;
+  }
+  if (!badgePendingPhoto) {
+    err.textContent = "Capture a photo or choose 'No Camera'.";
+    return;
+  }
+  state.employee = { name, photo: badgePendingPhoto };
+  closeBadgeModal();
+  render();
+  save();
+  flashStatus("ID badge printed for " + name + ".");
 }
 
 // ---- High scores ----
@@ -664,6 +806,11 @@ const el = {
   careerTitle: document.getElementById("careerTitle"),
   careerNext: document.getElementById("careerNext"),
   careerBar: document.getElementById("careerBar"),
+  idBadgeBox: document.getElementById("idBadgeBox"),
+  badgePhoto: document.getElementById("badgePhoto"),
+  badgeCompany: document.getElementById("badgeCompany"),
+  badgeName: document.getElementById("badgeName"),
+  badgeTitle: document.getElementById("badgeTitle"),
 };
 
 // money formatter: "$100,000.00". Above 1e9 use compact $1.23B to keep layout sane.
@@ -702,6 +849,19 @@ function render() {
     ? "Next: " + prog.next.title + " at " + format(Math.pow(10, prog.next.tier))
     : "Top of the ladder";
   el.careerBar.style.width = prog.pct + "%";
+
+  // employee ID badge
+  if (state.employee) {
+    el.idBadgeBox.classList.remove("hidden");
+    el.badgePhoto.src = state.employee.photo;
+    el.badgeName.textContent = state.employee.name;
+    el.badgeCompany.textContent = state.company
+      ? state.company.name + " (" + state.company.ticker + ")"
+      : "—";
+    el.badgeTitle.textContent = LEVELS[prog.idx].title;
+  } else {
+    el.idBadgeBox.classList.add("hidden");
+  }
 
   // suspicion meter
   const pct = Math.max(0, Math.min(100, state.suspicion));
@@ -1018,6 +1178,28 @@ function init() {
     .addEventListener("keydown", (e) => {
       if (e.key === "Enter") submitSetup();
     });
+  document.getElementById("badgeMenu").addEventListener("click", showBadgeSetup);
+  document
+    .getElementById("idBadgeBox")
+    .addEventListener("click", showBadgeSetup);
+  document
+    .getElementById("badgeCaptureBtn")
+    .addEventListener("click", captureBadgePhoto);
+  document
+    .getElementById("badgeRetakeBtn")
+    .addEventListener("click", retakeBadgePhoto);
+  document
+    .getElementById("badgeSkipCamBtn")
+    .addEventListener("click", useNoCameraPhoto);
+  document
+    .getElementById("badgeConfirmBtn")
+    .addEventListener("click", confirmBadge);
+  document.getElementById("badgeCloseX").addEventListener("click", closeBadgeModal);
+  document
+    .getElementById("employeeNameInput")
+    .addEventListener("keydown", (e) => {
+      if (e.key === "Enter") confirmBadge();
+    });
   const newsTape = document.getElementById("newsTape");
   if (newsTape) newsTape.addEventListener("animationend", onNewsEnd);
   advanceNews(); // start the ticker rolling
@@ -1029,6 +1211,7 @@ function init() {
   window.addEventListener("beforeunload", save);
 
   if (!state.company) showSetup(); // first launch -> incorporate
+  else if (!state.employee) showBadgeSetup(); // migrated save missing a badge
 }
 
 init();
