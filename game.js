@@ -4,7 +4,7 @@
 const SAVE_KEY = "big-business-sim-save-v2";
 const SCORES_KEY = "big-business-sim-scores";
 const MAX_SCORES = 10;
-const MAX_INVESTIGATIONS = 4; // hit this many -> auto game over
+const MAX_INVESTIGATIONS = 1; // a single SEC raid ends the game
 const DELIST_PRICE = 1.0; // stock at/under this -> delisted (game over)
 const IPO_PRICE = 90; // opening share price
 const TICK_MS = 100; // game loop interval
@@ -32,6 +32,7 @@ const GENERATORS = [
     baseCost: 15000,
     cps: 200,
     heat: 0.04,
+    img: "images/scheme-images/mark-to-market.png",
   },
   {
     id: "spe",
@@ -40,6 +41,7 @@ const GENERATORS = [
     baseCost: 110000,
     cps: 1500,
     heat: 0.1,
+    img: "images/scheme-images/special-purpose-vehicle.png",
   },
   {
     id: "trader",
@@ -48,6 +50,7 @@ const GENERATORS = [
     baseCost: 1300000,
     cps: 9000,
     heat: 0.5,
+    img: "images/scheme-images/energy-trader.png",
   },
   {
     id: "auditor",
@@ -55,7 +58,8 @@ const GENERATORS = [
     desc: "Signs anything and owns a shredder.",
     baseCost: 14000000,
     cps: 12000,
-    heat: -0.8,
+    heat: -0.1,
+    img: "images/scheme-images/in-houe-auditor.png",
   },
   {
     id: "broadband",
@@ -64,6 +68,7 @@ const GENERATORS = [
     baseCost: 160000000,
     cps: 90000,
     heat: 1.0,
+    img: "images/scheme-images/broadband-futures.png",
   },
   {
     id: "shell",
@@ -71,7 +76,8 @@ const GENERATORS = [
     desc: "Companies inside companies inside companies inside...",
     baseCost: 2000000000,
     cps: 500000,
-    heat: -2,
+    heat: -1,
+    img: "images/scheme-images/offshore-shell.png",
   },
   {
     id: "lobby",
@@ -79,7 +85,8 @@ const GENERATORS = [
     desc: "An 80 year old white man in your back pocket.",
     baseCost: 25000000000,
     cps: 4000000,
-    heat: -5,
+    heat: -2,
+    img: "images/scheme-images/state-house.png",
   },
 ];
 
@@ -98,6 +105,7 @@ const UPGRADES = [
     desc: "All passive heat −15%.",
     cost: 3000,
     effect: { heatGainMult: 0.85 },
+    img: "images/powerup-images/creative-bookkeeping.png",
   },
   {
     id: "rounding",
@@ -105,6 +113,7 @@ const UPGRADES = [
     desc: "Click heat −40%.",
     cost: 5000,
     effect: { clickHeatMult: 0.6 },
+    img: "images/powerup-images/round-in-our-favor.png",
   },
   {
     id: "secretary",
@@ -112,6 +121,7 @@ const UPGRADES = [
     desc: "Auto-shreds at 100% heat, resetting it to 10%. One-time-use.",
     cost: 8000,
     charges: 1, // consumable: auto-saves from investigation 3 times
+    img: "images/powerup-images/the-fixer.png",
   },
   {
     id: "restate",
@@ -119,6 +129,7 @@ const UPGRADES = [
     desc: "All passive heat −20% (stacks).",
     cost: 18000,
     effect: { heatGainMult: 0.8 },
+    img: "images/powerup-images/restatement.png",
   },
   // --- mid/late damage control ---
   {
@@ -127,6 +138,7 @@ const UPGRADES = [
     desc: "Click heat −60% (stacks).",
     cost: 40000,
     effect: { clickHeatMult: 0.4 },
+    img: "images/powerup-images/golf-retreat.png",
   },
   {
     id: "shredder",
@@ -134,6 +146,7 @@ const UPGRADES = [
     desc: "Shred removes 2× heat.",
     cost: 75000,
     effect: { shredMult: 2 },
+    img: "images/powerup-images/industrial-shreader.png",
   },
   {
     id: "retention",
@@ -141,6 +154,7 @@ const UPGRADES = [
     desc: "Shred cooldown −50%.",
     cost: 150000,
     effect: { cooldownMult: 0.5 },
+    img: "images/powerup-images/document-retention.png",
   },
   {
     id: "footnotes",
@@ -148,6 +162,7 @@ const UPGRADES = [
     desc: "All passive heat −25% (stacks).",
     cost: 350000,
     effect: { heatGainMult: 0.75 },
+    img: "images/powerup-images/creative-bookkeeping.png", // placeholder until real art
   },
   {
     id: "revolving",
@@ -155,6 +170,7 @@ const UPGRADES = [
     desc: "SEC seizes 30% less per raid.",
     cost: 900000,
     effect: { lossMult: 0.7 },
+    img: "images/powerup-images/revolving-door-lawyer.png",
   },
   {
     id: "offbalance",
@@ -162,6 +178,7 @@ const UPGRADES = [
     desc: "All passive heat −40% (stacks).",
     cost: 3000000,
     effect: { heatGainMult: 0.6 },
+    img: "images/powerup-images/off-balance-sheet-magic.png",
   },
   {
     id: "pr",
@@ -169,6 +186,7 @@ const UPGRADES = [
     desc: "All earnings ×1.5.",
     cost: 12000000,
     effect: { earnMult: 1.5 },
+    img: "images/powerup-images/pump-and-dump.png",
   },
 ];
 
@@ -451,12 +469,15 @@ function load() {
   }
 }
 
+// $ booked passively since last session; surfaced on the resume landing screen
+let offlineEarned = 0;
 function applyOfflineEarnings() {
   if (!state.lastSeen) return;
   const elapsed = (Date.now() - state.lastSeen) / 1000;
   if (elapsed <= 0) return;
   const earned = totalCps() * upgMult("earnMult") * elapsed;
   if (earned > 0) {
+    offlineEarned = earned;
     addEarnings(earned);
     state.suspicion += heatRate() * elapsed;
     clampHeat();
@@ -509,11 +530,10 @@ function gameOver() {
   hardReset();
   showModal(
     "GAME OVER — FEDERAL RAID",
-    "After <b>" +
-      MAX_INVESTIGATIONS +
-      " SEC investigations</b>, the FBI raided " +
+    "The <b>SEC raided</b> " +
       name +
-      ". Assets frozen, books subpoenaed, you're doing a perp walk. " +
+      " and the books didn't survive scrutiny. Assets frozen, " +
+      "records subpoenaed, and you're doing a perp walk. " +
       "The company is finished. Your high score has been saved.",
   );
 }
@@ -908,6 +928,8 @@ function render() {
     node.querySelector(".count-n").textContent = state.owned[gen.id] || 0;
     setMystery(node.querySelector(".name"), gen.name, revealed);
     setMystery(node.querySelector(".desc"), gen.desc, revealed);
+    const iconEl = node.querySelector(".item-icon");
+    if (iconEl) iconEl.classList.toggle("mystery", !revealed);
     const statsEl = node.querySelector(".stats");
     if (statsEl) {
       statsEl.innerHTML = revealed ? genStatsHTML(gen) : "?????";
@@ -929,6 +951,8 @@ function render() {
     if (costEl) costEl.classList.toggle("affordable", !owned && affordable);
     setMystery(node.querySelector(".name"), up.name, revealed);
     setMystery(node.querySelector(".desc"), up.desc, revealed);
+    const iconEl = node.querySelector(".item-icon");
+    if (iconEl) iconEl.classList.toggle("mystery", !revealed);
   }
 }
 
@@ -964,6 +988,7 @@ function renderUpgrades() {
       : '<div class="owned-tag">OWNED</div>';
     const mysteryCls = revealed ? "" : " mystery";
     node.innerHTML = `
+      ${iconHtml(up.img, up.name, revealed)}
       <div class="item-info">
         <div class="name${mysteryCls}">${revealed ? up.name : "?????"}</div>
         <div class="desc${mysteryCls}">${revealed ? up.desc : "?????"}</div>
@@ -976,6 +1001,15 @@ function renderUpgrades() {
   }
 }
 
+// icon thumbnail for a shop/upgrade row; empty string if the item has no art.
+// unrevealed items render a "?" mask (via .mystery) instead of the real art.
+function iconHtml(src, alt, revealed) {
+  if (!src) return "";
+  const m = revealed ? "" : " mystery";
+  return `<span class="item-icon${m}"><img src="${src}" alt="${alt}"
+    loading="lazy" onerror="this.style.display='none'"></span>`;
+}
+
 function renderShop() {
   el.shop.innerHTML = "";
   for (const gen of GENERATORS) {
@@ -986,6 +1020,7 @@ function renderShop() {
     node.className = "shop-item";
     node.id = "item-" + gen.id;
     node.innerHTML = `
+      ${iconHtml(gen.img, gen.name, revealed)}
       <div class="item-info">
         <div class="name${mysteryCls}">${revealed ? gen.name : "?????"}</div>
         <div class="desc${mysteryCls}">${revealed ? gen.desc : "?????"}</div>
@@ -1159,6 +1194,18 @@ function init() {
   renderShop();
   renderUpgrades();
   render();
+  // existing save -> landing button resumes instead of starting fresh
+  if (state.company) {
+    document.getElementById("landingStart").textContent = "Resume Game";
+    if (offlineEarned > 0) {
+      const note = document.getElementById("landingResumeNote");
+      note.textContent =
+        "Booked " +
+        format(offlineEarned) +
+        " in 'profits' while you were away.";
+      note.classList.remove("hidden");
+    }
+  }
   document.getElementById("clickBtn").addEventListener("click", click);
   document.getElementById("shredBtn").addEventListener("click", shred);
   document.getElementById("saveBtn").addEventListener("click", save);
@@ -1183,7 +1230,9 @@ function init() {
     .addEventListener("keydown", (e) => {
       if (e.key === "Enter") submitSetup();
     });
-  document.getElementById("badgeMenu").addEventListener("click", showBadgeSetup);
+  document
+    .getElementById("badgeMenu")
+    .addEventListener("click", showBadgeSetup);
   document
     .getElementById("idBadgeBox")
     .addEventListener("click", showBadgeSetup);
@@ -1199,7 +1248,9 @@ function init() {
   document
     .getElementById("badgeConfirmBtn")
     .addEventListener("click", confirmBadge);
-  document.getElementById("badgeCloseX").addEventListener("click", closeBadgeModal);
+  document
+    .getElementById("badgeCloseX")
+    .addEventListener("click", closeBadgeModal);
   document
     .getElementById("employeeNameInput")
     .addEventListener("keydown", (e) => {
@@ -1218,7 +1269,8 @@ function init() {
   document.getElementById("landingStart").addEventListener("click", () => {
     gameStarted = true;
     document.getElementById("landingScreen").classList.add("hidden");
-    if (!state.company) showSetup(); // first launch -> incorporate
+    if (!state.company)
+      showSetup(); // first launch -> incorporate
     else if (!state.employee) showBadgeSetup(); // migrated save missing a badge
   });
   document

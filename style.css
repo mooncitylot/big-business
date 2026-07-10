@@ -516,6 +516,44 @@ legend {
 .shop-item.locked:hover {
   background: #f0f0f0;
 }
+.item-icon {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  border: 1px solid;
+  border-color: var(--sh) var(--hi) var(--hi) var(--sh);
+  background: #fff;
+  overflow: hidden;
+}
+.item-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+  display: block;
+}
+.shop-item.locked .item-icon img {
+  filter: grayscale(1) opacity(0.55);
+}
+/* not yet affordable: hide the art behind a "?" mask, like name/desc/stats */
+.item-icon.mystery {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e4e4e4;
+  color: var(--sh);
+  font-weight: 700;
+  font-size: 28px;
+}
+.item-icon.mystery img {
+  display: none;
+}
+.item-icon.mystery::after {
+  content: "?";
+}
+.item-info {
+  flex: 1;
+}
 .item-info .name {
   font-weight: 700;
 }
@@ -815,6 +853,14 @@ legend {
 }
 .landing-title span {
   color: var(--money);
+}
+.landing-resume-note {
+  margin: -8px 0 18px;
+  max-width: 260px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--money);
+  font-family: "Courier New", monospace;
 }
 .landing-buttons {
   display: flex;
